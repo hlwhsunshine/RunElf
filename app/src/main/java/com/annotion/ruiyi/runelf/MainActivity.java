@@ -1,12 +1,13 @@
 package com.annotion.ruiyi.runelf;
 
+
+import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -14,14 +15,14 @@ import android.widget.Toast;
 
 import com.annotion.ruiyi.runelf.http.OnHttpListener;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.File;
 import java.util.List;
 
+
 public class MainActivity extends AppCompatActivity {
-    final String zipPath = Environment.getExternalStorageDirectory().toString() + "/.xxx";
     private Button rootBtn;
+
+    final String zipPath = Environment.getExternalStorageDirectory().toString() + "/ARMM";
 
     Handler handler = new Handler() {
         @Override
@@ -45,18 +46,24 @@ public class MainActivity extends AppCompatActivity {
                 });
 
             } else if (msg.what == 2) {
-                rootBtn.setEnabled(true);
-                if (msg.arg1 == 1) {
-                    showDilog("安装成功,如若没发现重启再看");
-                } else {
-                    showDilog("安装失败！");
+
+                File script = new File(zipPath + "/copy.sh");
+
+                if (script.exists()) {
+                    int code = ApkController.excScript("copy.sh",zipPath);
+                    Log.e("liux","code:"+code);
                 }
 
+                FileUtils.deleteAll(new File(zipPath));
             }
 
 
         }
     };
+
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +71,15 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
 
-        new HttpAsyncTask().httpExcute(HttpUtils.ROOT, HttpUtils.GET, new OnHttpListener() {
+        findViewById(R.id.bt_download).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                handler.sendEmptyMessageDelayed(2,5000);
+            }
+        });
+
+
+        /*new HttpAsyncTask().httpExcute(HttpUtils.ROOT, HttpUtils.GET, new OnHttpListener() {
             @Override
             public void onSuccess(String data) {
                 Toast.makeText(MainActivity.this, "总数：" + data, Toast.LENGTH_SHORT).show();
@@ -75,12 +90,17 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "获取总数失败", Toast.LENGTH_SHORT).show();
 
             }
+        });*/
+
+        findViewById(R.id.bt_get).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new Root().run(MainActivity.this);
+            }
         });
 
-        findViewById(R.id.bt_get).setVisibility(View.INVISIBLE);
 
-
-        findViewById(R.id.bt_post).setOnClickListener(new View.OnClickListener() {
+        /*findViewById(R.id.bt_post).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (HttpUtils.isNetworkConnection(MainActivity.this)) {
@@ -115,17 +135,17 @@ public class MainActivity extends AppCompatActivity {
 
 
             }
-        });
-        final int a = 1;
+        });*/
 
-        rootBtn = findViewById(R.id.bt_download);
+
+        /*rootBtn = findViewById(R.id.bt_download);
         rootBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 rootBtn.setEnabled(false);
-               get(1);
+                get(1);
             }
-        });
+        });*/
 
 
     }
@@ -199,44 +219,5 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }).show();
-    }
-
-    public String execRootCmd(String cmd) {
-        String result = "";
-        DataOutputStream dos = null;
-        DataInputStream dis = null;
-        try {
-            Process p = Runtime.getRuntime().exec("su");
-            dos = new DataOutputStream(p.getOutputStream());
-            dis = new DataInputStream(p.getInputStream());
-            dos.writeBytes(cmd + "\n");
-            dos.flush();
-            dos.writeBytes("exit\n");
-            dos.flush();
-            String line = null;
-            while ((line = dis.readLine()) != null) {
-                Log.d("result", line);
-                result += line;
-            }
-            p.waitFor();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (dos != null) {
-                try {
-                    dos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (dis != null) {
-                try {
-                    dis.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return result;
     }
 }

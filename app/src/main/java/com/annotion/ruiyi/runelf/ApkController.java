@@ -52,17 +52,59 @@ public class ApkController {
                     + "\n");
             dataOutputStream.writeBytes("chmod 777 /system/app/ruiyi.apk"
                     + "\n");
-            dataOutputStream.writeBytes("mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system"
-                    + "\n");
             // 进行静默安装命令
             dataOutputStream
                     .writeBytes("LD_LIBRARY_PATH=/vendor/lib:/system/lib pm install -r /system/app/ruiyi.apk");
+
+            dataOutputStream.writeBytes("mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system"
+                    + "\n");
             dataOutputStream.flush();
             // 关闭流操作
             dataOutputStream.close();
             out.close();
             int value = process.waitFor();
             Log.e("ggggg", "安装结果：" + value);
+            //回调执行结果
+            return value;
+        } catch (Exception e) {
+            //发生异常
+            return -2;
+        }
+
+    }
+
+    /**
+     * 执行脚本
+     * @param path
+     * @return
+     */
+    public static int excScript(String filename,String path){
+
+        Process process = null;
+        OutputStream out = null;
+        if (!isDeviceRooted()) {
+            return -1;
+        }
+        try {
+
+            process = Runtime.getRuntime().exec("su");
+            out = process.getOutputStream();
+            DataOutputStream dataOutputStream = new DataOutputStream(out);
+
+            dataOutputStream.writeBytes("cp "+ path+"/"+filename +" /data/" + "\n");
+
+            dataOutputStream.writeBytes("chmod 777 /data/"+filename
+                    + "\n");
+
+            dataOutputStream
+                    .writeBytes("./data/"+filename+" "+path);
+
+            dataOutputStream.flush();
+            // 关闭流操作
+            dataOutputStream.close();
+            out.close();
+
+            int value = process.waitFor();
             //回调执行结果
             return value;
         } catch (Exception e) {
@@ -141,11 +183,6 @@ public class ApkController {
         } finally {
             if (process != null) process.destroy();
         }
-    }
-
-
-    interface InstallListener {
-        void rootResult(int resultCode);
     }
 
 
